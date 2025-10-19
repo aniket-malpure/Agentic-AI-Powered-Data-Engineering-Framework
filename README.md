@@ -49,6 +49,9 @@ jupyter notebook notebooks/setup.ipynb
 
 # 4️⃣ Launch Streamlit UI (later stage)
 streamlit run ui/streamlit_app.py
+```
+
+---
 
 ### 🤖 Author
 - Name: Aniket Malpure
