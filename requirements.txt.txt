@@ -1,0 +1,12 @@
+pandas
+numpy
+matplotlib
+seaborn
+pyspark
+sqlalchemy
+streamlit
+langchain
+langgraph
+openai
+great_expectations
+jupyter
