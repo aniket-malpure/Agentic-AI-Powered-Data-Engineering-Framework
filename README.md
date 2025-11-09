@@ -34,22 +34,84 @@ The framework:
 
 ---
 
-### 🚀 How to Run
-```bash
-# 1️⃣ Create a new virtual environment
+### 🎯 Current Progress (Deliverable 2)
+✅ **Implemented & Verified:**
+- **Ingestion Agent:** Pulls data from GitHub and databases into a unified SQLite warehouse.  
+- **Validation Agent:** Performs schema validation, missing value detection, and data profiling.  
+- **Transformation Agent:** Executes both rule-based and LLM-guided data transformations, including multi-table joins and aggregations.  
+- **LangGraph Orchestrator:** Connects agents into an end-to-end pipeline (Ingestion → Validation → Transformation).  
+- **Streamlit UI:** Enables natural-language instructions and displays logs interactively.
+
+🚧 **Upcoming:**
+- Storage Agent (Medallion architecture)
+- Visualization Agent (LLM-driven chart generation)
+
+---
+
+### 🚀 Setup Instructions
+
+1️⃣ Clone the Repository
+```
+git clone https://github.com/aniket-malpure/Agentic_AI_Data_Engineering_Framework.git
+cd Agentic_AI_Data_Engineering_Framework
+```
+
+2️⃣ Create a Virtual Environment
+```
 python -m venv venv
-source venv/bin/activate   # on macOS/Linux
-venv\Scripts\activate      # on Windows
+source venv/bin/activate        # macOS/Linux
+venv\Scripts\activate           # Windows
+```
 
-# 2️⃣ Install dependencies
+3️⃣ Install Dependencies
+```
 pip install -r requirements.txt
+```
 
-# 3️⃣ Run setup notebook
-jupyter notebook notebooks/setup.ipynb
+4️⃣ Set Your OpenAI API Key
+```
+export OPENAI_API_KEY="your_api_key"   # macOS/Linux
+setx OPENAI_API_KEY "your_api_key"     # Windows
+```
 
-# 4️⃣ Launch Streamlit UI (later stage)
+5️⃣ Run the Full Pipeline (Manual Mode)
+```
+python src/orchestrator.py
+```
+
+6️⃣ Launch the Streamlit Interface
+```
 streamlit run ui/streamlit_app.py
+```
+
+---
+
+### 📊 Current Results
+
+| Component            | Status     | Output                                                    |
+| -------------------- | ---------- | --------------------------------------------------------- |
+| Ingestion Agent      | ✅ Working  | Created `olist_database.db` from 8 GitHub CSVs            |
+| Validation Agent     | ✅ Working  | Detected schema consistency issues, nulls, and duplicates |
+| Transformation Agent | ✅ Working  | Generated dynamic joins and aggregations via GPT-4o-mini  |
+| Streamlit UI         | ✅ Working  | Displays logs and accepts instructions                    |
+| Storage Agent        | 🚧 Planned | To implement Medallion-tier storage                       |
+| Visualization Agent  | 🚧 Planned | To enable LLM-driven visual plotting                      |
+
+---
+
+### 🧩 Known Issues
+- Module Path Imports: Requires adding the project root to sys.path in ui/streamlit_app.py.
+- LLM Timeout Handling: Occasionally, API latency causes transformation retries.
+- Visualization Agent Pending: No plots are generated yet (placeholder integrated).
+- Environment Variables: OPENAI_API_KEY must be set before running.
+
+---
 
 ### 🤖 Author
-- Name: Aniket Malpure
-- Email: aniketmalpure@ufl.edu
+
+Aniket Deepak Malpure  
+M.S. in Applied Data Science  
+University of Florida (2024–2026)  
+📧 Email: aniketmalpure@ufl.edu  
+🔗 GitHub: aniket-malpure  
+💼 LinkedIn: linkedin.com/in/aniketmalpure  
