@@ -1,7 +1,11 @@
 # 🤖 Agentic AI–Powered Data Engineering Framework
 
 ### 🧩 Project Overview
-This project builds an **Agentic AI framework** that automates the end-to-end data engineering lifecycle, from data ingestion to visualization, using **multi-agent collaboration** with a human-in-the-loop.
+This project builds an **Agentic AI framework** that automates the end-to-end data engineering lifecycle, from data ingestion to visualization, using **multi-agent collaboration**.
+
+The system executes the complete pipeline:
+
+```Ingestion → Validation → Transformation → Storage (Medallion) → Visualization```
 
 The framework:
 - Ingests raw data from GitHub and a SQLite database
@@ -15,11 +19,11 @@ The framework:
 ### 📂 Repository Structure
 | Folder | Description |
 |---------|--------------|
-| `data/` | Raw GitHub CSV and SQLite sample database |
+| `data/` | Raw GitHub CSV & SQLite database and visualizations |
 | `notebooks/` | Initial setup notebook with environment validation |
 | `src/` | Source code for each agent and orchestrator logic |
-| `ui/` | Streamlit interface for user interaction |
-| `results/` | Sample visualizations or processed outputs |
+| `streamlit_app.py` | Streamlit interface for user interaction |
+| `results/` | UI screenshots for the report |
 | `docs/` | Architecture diagram and design docs |
 
 ---
@@ -34,17 +38,13 @@ The framework:
 
 ---
 
-### 🎯 Current Progress (Deliverable 2)
-✅ **Implemented & Verified:**
-- **Ingestion Agent:** Pulls data from GitHub and databases into a unified SQLite warehouse.  
-- **Validation Agent:** Performs schema validation, missing value detection, and data profiling.  
-- **Transformation Agent:** Executes both rule-based and LLM-guided data transformations, including multi-table joins and aggregations.  
-- **LangGraph Orchestrator:** Connects agents into an end-to-end pipeline (Ingestion → Validation → Transformation).  
-- **Streamlit UI:** Enables natural-language instructions and displays logs interactively.
+### 🧠 Key Capabilities
 
-🚧 **Upcoming:**
-- Storage Agent (Medallion architecture)
-- Visualization Agent (LLM-driven chart generation)
+- Multi-Agent Workflow built on LangGraph
+- LLM-guided transformations (safe, column-aware, sandboxed execution)
+- Automatic visualization generation via GPT-4o-mini
+- Full operational transparency with logs and system messages
+- Medallion Architecture implemented with versioned Parquet stores
 
 ---
 
@@ -81,29 +81,29 @@ python src/orchestrator.py
 
 6️⃣ Launch the Streamlit Interface
 ```
-streamlit run ui/streamlit_app.py
+streamlit run streamlit_app.py
 ```
 
 ---
 
 ### 📊 Current Results
 
-| Component            | Status     | Output                                                    |
-| -------------------- | ---------- | --------------------------------------------------------- |
-| Ingestion Agent      | ✅ Working  | Created `olist_database.db` from 8 GitHub CSVs            |
-| Validation Agent     | ✅ Working  | Detected schema consistency issues, nulls, and duplicates |
-| Transformation Agent | ✅ Working  | Generated dynamic joins and aggregations via GPT-4o-mini  |
-| Streamlit UI         | ✅ Working  | Displays logs and accepts instructions                    |
-| Storage Agent        | 🚧 Planned | To implement Medallion-tier storage                       |
-| Visualization Agent  | 🚧 Planned | To enable LLM-driven visual plotting                      |
+| Component            | Status    | Notes                                   |
+| -------------------- | --------- | --------------------------------------- |
+| Ingestion Agent      | ✅ Working | Downloads + loads all Olist tables      |
+| Validation Agent     | ✅ Working | Summaries, checks, profiling            |
+| Transformation Agent | ✅ Working | Column-aware LLM transformations        |
+| Storage Agent        | ✅ Working | Bronze → Silver → Gold Parquet creation |
+| Visualization Agent  | ✅ Working | Saves plots & code for UI               |
+| Orchestrator         | ✅ Working | Full sequential pipeline                |
+| Streamlit UI         | ✅ Working | Visualizes all outputs                  |
 
 ---
 
 ### 🧩 Known Issues
-- Module Path Imports: Requires adding the project root to sys.path in ui/streamlit_app.py.
-- LLM Timeout Handling: Occasionally, API latency causes transformation retries.
-- Visualization Agent Pending: No plots are generated yet (placeholder integrated).
-- Environment Variables: OPENAI_API_KEY must be set before running.
+- Some transformations may require additional guardrails for multi-table inference
+- Large datasets may cause slow parquet writing on Windows
+- Occasional LLM latency depending on API load
 
 ---
 

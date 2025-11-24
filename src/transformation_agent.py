@@ -39,10 +39,6 @@ INPUT_DB_PATH = Path("data/db/olist_database.db")
 OUTPUT_DB_PATH = Path("data/db/olist_transformed.db")
 OUTPUT_DB_PATH.parent.mkdir(parents=True, exist_ok=True)
 
-# Requires environment variable:
-#   export OPENAI_API_KEY="your_api_key_here"
-
-
 # --------------------------------------------------------
 # --- Utility Functions
 # --------------------------------------------------------
@@ -130,127 +126,162 @@ def rule_based_transformation(db_path: Path, out_path: Path) -> Dict:
 # --------------------------------------------------------
 def llm_guided_transformation(instruction: str, db_path: Path) -> Dict:
     """
-    Use an LLM to generate transformation code.
-    - Supports single-table and multi-table joins.
-    - Auto-detects if SQL/join/merge terms exist.
-    - Runs generated code safely.
+    Upgraded column-aware transformation logic:
+    - Extracts column candidates from instruction
+    - Matches them to actual table schemas
+    - Selects single- or multi-table mode automatically
+    - Prevents missing-column errors
     """
     if not db_path.exists():
         return {"status": "error", "message": f"Database not found at {db_path}"}
 
     conn = sqlite3.connect(str(db_path))
     table_schemas = get_table_schemas(db_path)
-    use_db_mode = bool(re.search(r"\b(join|merge|sql|union|group by|select)\b", instruction.lower()))
 
+    # -----------------------------
+    # 1️⃣ Extract potential column names from instruction
+    # -----------------------------
+    tokens = re.findall(r"[a-zA-Z0-9_]+", instruction.lower())
+    columns_requested = set(tokens)
+
+    # -----------------------------
+    # 2️⃣ Match requested columns to tables
+    # -----------------------------
+    table_hits = {}
+    for table, cols in table_schemas.items():
+        matched = [c for c in cols if c.lower() in columns_requested]
+        if matched:
+            table_hits[table] = matched
+
+    # If no tables match, fail early
+    if not table_hits:
+        return {
+            "status": "error",
+            "message": "No matching columns found in any table.",
+            "requested_columns": list(columns_requested),
+            "instruction": instruction
+        }
+
+    # -----------------------------
+    # 3️⃣ Decide transformation mode
+    # -----------------------------
+    if len(table_hits) == 1:
+        mode = "single-table"
+        target_table = next(iter(table_hits.keys()))
+    else:
+        mode = "multi-table"
+
+    # -----------------------------
+    # LLM Model
+    # -----------------------------
     llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
 
-    if use_db_mode:
-        # --- Multi-table / SQL Mode ---
+    # -----------------------------
+    # 4️⃣ Build prompt dynamically based on matched tables
+    # -----------------------------
+    if mode == "multi-table":
         prompt = ChatPromptTemplate.from_template(textwrap.dedent("""
         You are an expert data engineer working with an SQLite database.
 
-        The database has these tables and their columns:
+        These tables contain the columns referenced in the instruction:
+        {table_hits}
+
+        Their schemas are:
         {table_schemas}
 
         Instruction: {instruction}
 
-        Generate safe Python code using pandas + sqlite3 to perform this transformation.
+        Generate SAFE Python code using pandas + sqlite3:
+
         Requirements:
-        - Define a function `transform(conn)` that uses the given SQLite connection.
-        - Load multiple tables using pd.read_sql or pd.read_sql_query.
-        - Perform necessary joins, aggregations, or SQL queries.
-        - Return the final pandas DataFrame result.
-        - Do not use external libraries, eval, exec, os, or file I/O.
-        - Use only pandas and sqlite3.
-        - Ensure safety.
-        Example:
-        ```python
-        def transform(conn):
-            import pandas as pd
-            # example join
-            df1 = pd.read_sql("SELECT * FROM table1", conn)
-            df2 = pd.read_sql("SELECT * FROM table2", conn)
-            result = pd.merge(df1, df2, on="id", how="inner")
-            return result
-        ```
+        - Define `def transform(conn):`
+        - Load all relevant tables
+        - Perform correct JOINs using shared keys when possible
+        - Only use pandas and sqlite3 (NO OS, NO eval/exec)
+        - Return a single pandas DataFrame `result`
+        - Do not guess column names beyond what exists in schemas
         """))
+
     else:
-        # --- Single-table Mode ---
+        # --- single-table ---
         prompt = ChatPromptTemplate.from_template(textwrap.dedent("""
-        You are a data transformation assistant.
-        You are given a pandas DataFrame named `df`.
+        You are a data transformation assistant working on a single table.
+
+        Table name: {target_table}
+        Columns: {target_columns}
 
         Instruction: {instruction}
 
-        Generate safe Python code that:
-        - Defines a function `transform(df)` returning the transformed DataFrame.
-        - Uses only pandas.
-        - Avoids unsafe operations (no eval, exec, os, open, imports).
-        - Keeps it efficient and deterministic.
-        Example:
-        ```python
-        def transform(df):
-            df = df.copy()
-            df = df[df['amount'] > 100]
-            return df
-        ```
+        Generate SAFE Python code:
+
+        Requirements:
+        - Define `def transform(df):`
+        - Use only pandas
+        - Do not reference missing columns
+        - Return transformed DataFrame
         """))
 
-    # --- Generate Code ---
-    response = llm.invoke(prompt.format(
-        instruction=instruction,
-        table_schemas=json.dumps(table_schemas, indent=2)
-    ))
-    code = response.content
+    # -----------------------------
+    # 5️⃣ LLM Code Generation
+    # -----------------------------
+    if mode == "multi-table":
+        response = llm.invoke(prompt.format(
+            table_hits=json.dumps(table_hits, indent=2),
+            table_schemas=json.dumps(table_schemas, indent=2),
+            instruction=instruction
+        ))
+    else:
+        response = llm.invoke(prompt.format(
+            target_table=target_table,
+            target_columns=table_schemas[target_table],
+            instruction=instruction
+        ))
 
-    # Extract code from markdown
+    code = response.content
     match = re.search(r"```python(.*?)```", code, re.DOTALL)
     if match:
         code = match.group(1).strip()
 
-    # Safety scan
-    # banned = ["os.", "system(", "eval(", "exec(", "import ", "subprocess", "open("]
-    # if any(b in code for b in banned):
-    #     return {"status": "error", "message": "Unsafe code detected in LLM output.", "code": code}
-
-    # --- Execute Code ---
+    # -----------------------------
+    # 6️⃣ Execute the generated code
+    # -----------------------------
     conn_out = sqlite3.connect(str(OUTPUT_DB_PATH))
     summary = []
+
     try:
         local_env = {"pd": pd}
         exec(code, local_env)
-        transform_fn = local_env.get("transform")
 
-        if not transform_fn:
-            raise ValueError("LLM output missing transform() definition.")
-
-        if use_db_mode:
+        if mode == "multi-table":
+            transform_fn = local_env.get("transform")
             df_result = transform_fn(conn)
+
             df_result.to_sql("llm_transformed_result", conn_out, if_exists="replace", index=False)
             summary.append({
                 "mode": "multi-table",
+                "tables_used": list(table_hits.keys()),
                 "rows": len(df_result),
                 "columns": len(df_result.columns)
             })
         else:
-            # Apply per-table if not join-based
-            tables = load_table_names(db_path)
-            for table in tables:
-                df = pd.read_sql(f"SELECT * FROM {table}", conn)
-                df_t = transform_fn(df)
-                df_t.to_sql(table, conn_out, if_exists="replace", index=False)
-                summary.append({
-                    "table": table,
-                    "rows_before": len(df),
-                    "rows_after": len(df_t),
-                    "columns": len(df_t.columns),
-                    "mode": "single-table"
-                })
+            transform_fn = local_env.get("transform")
+            df = pd.read_sql(f"SELECT * FROM {target_table}", conn)
+            df_t = transform_fn(df)
+
+            df_t.to_sql(target_table, conn_out, if_exists="replace", index=False)
+            summary.append({
+                "mode": "single-table",
+                "table": target_table,
+                "rows_before": len(df),
+                "rows_after": len(df_t),
+                "columns": len(df_t.columns)
+            })
 
     except Exception as e:
         summary.append({
             "error": str(e),
-            "trace": traceback.format_exc()
+            "trace": traceback.format_exc(),
+            "generated_code": code
         })
 
     conn.close()
@@ -258,14 +289,12 @@ def llm_guided_transformation(instruction: str, db_path: Path) -> Dict:
 
     return {
         "status": "success",
-        "mode": "multi-table" if use_db_mode else "single-table",
-        "input_db": str(db_path),
-        "output_db": str(OUTPUT_DB_PATH),
+        "mode": mode,
+        "tables_detected": table_hits,
         "generated_code": code,
         "summary": summary,
-        "message": f"LLM-guided transformation ({'multi-table' if use_db_mode else 'single-table'}) executed successfully."
+        "message": f"Transformation completed in {mode} mode."
     }
-
 
 # --------------------------------------------------------
 # --- LangChain Tool for LangGraph

@@ -1,0 +1,214 @@
+{
+  "records": [
+    {
+      "table_name": "llm_transformed_result",
+      "layer": "silver",
+      "version_tag": "v1_20251121T221714Z",
+      "ts_utc": "2025-11-21T22:17:15Z",
+      "rows": 99440,
+      "cols": 2,
+      "checksum": "9b3973a57f4c18035b37e81b68a8c3a06768b926",
+      "path": "data\\medallion\\silver\\llm_transformed_result\\v1_20251121T221714Z\\llm_transformed_result.parquet"
+    },
+    {
+      "table_name": "llm_transformed_result",
+      "layer": "silver",
+      "version_tag": "v2_20251123T165735Z",
+      "ts_utc": "2025-11-23T16:57:36Z",
+      "rows": 99440,
+      "cols": 2,
+      "checksum": "9b3973a57f4c18035b37e81b68a8c3a06768b926",
+      "path": "data\\medallion\\silver\\llm_transformed_result\\v2_20251123T165735Z\\llm_transformed_result.parquet"
+    },
+    {
+      "table_name": "llm_transformed_result",
+      "layer": "silver",
+      "version_tag": "v3_20251123T190038Z",
+      "ts_utc": "2025-11-23T19:00:38Z",
+      "rows": 99440,
+      "cols": 2,
+      "checksum": "9b3973a57f4c18035b37e81b68a8c3a06768b926",
+      "path": "data\\medallion\\silver\\llm_transformed_result\\v3_20251123T190038Z\\llm_transformed_result.parquet"
+    },
+    {
+      "table_name": "llm_transformed_result",
+      "layer": "silver",
+      "version_tag": "v4_20251123T194609Z",
+      "ts_utc": "2025-11-23T19:46:10Z",
+      "rows": 99440,
+      "cols": 2,
+      "checksum": "9b3973a57f4c18035b37e81b68a8c3a06768b926",
+      "path": "data\\medallion\\silver\\llm_transformed_result\\v4_20251123T194609Z\\llm_transformed_result.parquet"
+    },
+    {
+      "table_name": "llm_transformed_result",
+      "layer": "silver",
+      "version_tag": "v5_20251123T195338Z",
+      "ts_utc": "2025-11-23T19:53:38Z",
+      "rows": 99440,
+      "cols": 2,
+      "checksum": "9b3973a57f4c18035b37e81b68a8c3a06768b926",
+      "path": "data\\medallion\\silver\\llm_transformed_result\\v5_20251123T195338Z\\llm_transformed_result.parquet"
+    },
+    {
+      "table_name": "llm_transformed_result",
+      "layer": "silver",
+      "version_tag": "v6_20251123T195805Z",
+      "ts_utc": "2025-11-23T19:58:06Z",
+      "rows": 99440,
+      "cols": 2,
+      "checksum": "9b3973a57f4c18035b37e81b68a8c3a06768b926",
+      "path": "data\\medallion\\silver\\llm_transformed_result\\v6_20251123T195805Z\\llm_transformed_result.parquet"
+    },
+    {
+      "table_name": "llm_transformed_result",
+      "layer": "silver",
+      "version_tag": "v7_20251123T201034Z",
+      "ts_utc": "2025-11-23T20:10:35Z",
+      "rows": 99440,
+      "cols": 2,
+      "checksum": "9b3973a57f4c18035b37e81b68a8c3a06768b926",
+      "path": "data\\medallion\\silver\\llm_transformed_result\\v7_20251123T201034Z\\llm_transformed_result.parquet"
+    },
+    {
+      "table_name": "llm_transformed_result",
+      "layer": "silver",
+      "version_tag": "v8_20251123T201654Z",
+      "ts_utc": "2025-11-23T20:16:54Z",
+      "rows": 99440,
+      "cols": 2,
+      "checksum": "9b3973a57f4c18035b37e81b68a8c3a06768b926",
+      "path": "data\\medallion\\silver\\llm_transformed_result\\v8_20251123T201654Z\\llm_transformed_result.parquet"
+    },
+    {
+      "table_name": "llm_transformed_result",
+      "layer": "silver",
+      "version_tag": "v9_20251123T212304Z",
+      "ts_utc": "2025-11-23T21:23:04Z",
+      "rows": 99440,
+      "cols": 2,
+      "checksum": "9b3973a57f4c18035b37e81b68a8c3a06768b926",
+      "path": "data\\medallion\\silver\\llm_transformed_result\\v9_20251123T212304Z\\llm_transformed_result.parquet"
+    },
+    {
+      "table_name": "llm_transformed_result",
+      "layer": "silver",
+      "version_tag": "v10_20251123T212959Z",
+      "ts_utc": "2025-11-23T21:29:59Z",
+      "rows": 20,
+      "cols": 2,
+      "checksum": "3fd0926bf08ae19f0c86a2cf444a60754f327c23",
+      "path": "data\\medallion\\silver\\llm_transformed_result\\v10_20251123T212959Z\\llm_transformed_result.parquet"
+    },
+    {
+      "table_name": "llm_transformed_result",
+      "layer": "silver",
+      "version_tag": "v11_20251123T213902Z",
+      "ts_utc": "2025-11-23T21:39:02Z",
+      "rows": 99440,
+      "cols": 2,
+      "checksum": "9b3973a57f4c18035b37e81b68a8c3a06768b926",
+      "path": "data\\medallion\\silver\\llm_transformed_result\\v11_20251123T213902Z\\llm_transformed_result.parquet"
+    },
+    {
+      "table_name": "llm_transformed_result",
+      "layer": "silver",
+      "version_tag": "v12_20251123T214417Z",
+      "ts_utc": "2025-11-23T21:44:17Z",
+      "rows": 99440,
+      "cols": 2,
+      "checksum": "9b3973a57f4c18035b37e81b68a8c3a06768b926",
+      "path": "data\\medallion\\silver\\llm_transformed_result\\v12_20251123T214417Z\\llm_transformed_result.parquet"
+    },
+    {
+      "table_name": "llm_transformed_result",
+      "layer": "silver",
+      "version_tag": "v13_20251123T222526Z",
+      "ts_utc": "2025-11-23T22:25:27Z",
+      "rows": 99440,
+      "cols": 2,
+      "checksum": "9b3973a57f4c18035b37e81b68a8c3a06768b926",
+      "path": "data\\medallion\\silver\\llm_transformed_result\\v13_20251123T222526Z\\llm_transformed_result.parquet"
+    },
+    {
+      "table_name": "llm_transformed_result",
+      "layer": "silver",
+      "version_tag": "v14_20251123T222804Z",
+      "ts_utc": "2025-11-23T22:28:04Z",
+      "rows": 99440,
+      "cols": 2,
+      "checksum": "9b3973a57f4c18035b37e81b68a8c3a06768b926",
+      "path": "data\\medallion\\silver\\llm_transformed_result\\v14_20251123T222804Z\\llm_transformed_result.parquet"
+    },
+    {
+      "table_name": "llm_transformed_result",
+      "layer": "silver",
+      "version_tag": "v15_20251123T224119Z",
+      "ts_utc": "2025-11-23T22:41:19Z",
+      "rows": 99440,
+      "cols": 2,
+      "checksum": "9b3973a57f4c18035b37e81b68a8c3a06768b926",
+      "path": "data\\medallion\\silver\\llm_transformed_result\\v15_20251123T224119Z\\llm_transformed_result.parquet"
+    },
+    {
+      "table_name": "llm_transformed_result",
+      "layer": "silver",
+      "version_tag": "v16_20251123T224716Z",
+      "ts_utc": "2025-11-23T22:47:16Z",
+      "rows": 10,
+      "cols": 2,
+      "checksum": "80bbe0bd370a298a8fa5d2dbcd1364d2b9961792",
+      "path": "data\\medallion\\silver\\llm_transformed_result\\v16_20251123T224716Z\\llm_transformed_result.parquet"
+    },
+    {
+      "table_name": "llm_transformed_result",
+      "layer": "silver",
+      "version_tag": "v17_20251123T225750Z",
+      "ts_utc": "2025-11-23T22:57:50Z",
+      "rows": 10,
+      "cols": 2,
+      "checksum": "80bbe0bd370a298a8fa5d2dbcd1364d2b9961792",
+      "path": "data\\medallion\\silver\\llm_transformed_result\\v17_20251123T225750Z\\llm_transformed_result.parquet"
+    },
+    {
+      "table_name": "llm_transformed_result",
+      "layer": "silver",
+      "version_tag": "v18_20251123T230315Z",
+      "ts_utc": "2025-11-23T23:03:15Z",
+      "rows": 99440,
+      "cols": 2,
+      "checksum": "9b3973a57f4c18035b37e81b68a8c3a06768b926",
+      "path": "data\\medallion\\silver\\llm_transformed_result\\v18_20251123T230315Z\\llm_transformed_result.parquet"
+    },
+    {
+      "table_name": "llm_transformed_result",
+      "layer": "silver",
+      "version_tag": "v19_20251123T231027Z",
+      "ts_utc": "2025-11-23T23:10:27Z",
+      "rows": 99440,
+      "cols": 2,
+      "checksum": "9b3973a57f4c18035b37e81b68a8c3a06768b926",
+      "path": "data\\medallion\\silver\\llm_transformed_result\\v19_20251123T231027Z\\llm_transformed_result.parquet"
+    },
+    {
+      "table_name": "llm_transformed_result",
+      "layer": "silver",
+      "version_tag": "v20_20251124T003737Z",
+      "ts_utc": "2025-11-24T00:37:37Z",
+      "rows": 99440,
+      "cols": 2,
+      "checksum": "9b3973a57f4c18035b37e81b68a8c3a06768b926",
+      "path": "data\\medallion\\silver\\llm_transformed_result\\v20_20251124T003737Z\\llm_transformed_result.parquet"
+    },
+    {
+      "table_name": "llm_transformed_result",
+      "layer": "silver",
+      "version_tag": "v21_20251124T014643Z",
+      "ts_utc": "2025-11-24T01:46:43Z",
+      "rows": 99440,
+      "cols": 2,
+      "checksum": "9b3973a57f4c18035b37e81b68a8c3a06768b926",
+      "path": "data\\medallion\\silver\\llm_transformed_result\\v21_20251124T014643Z\\llm_transformed_result.parquet"
+    }
+  ]
+}

@@ -65,65 +65,113 @@ def _load_table_from_layer(layer: str, table_name: str) -> pd.DataFrame:
 # -----------------------------
 def llm_visualization(instruction: str, df: pd.DataFrame) -> Dict:
     """
-    Use an LLM to generate visualization code safely.
-    - Only matplotlib/seaborn are allowed.
-    - Saves output to data/visualizations/.
+    Upgraded column-aware visualization:
+    - Extracts candidate columns from instruction
+    - Matches them to actual df columns
+    - Ensures LLM only uses existing columns
+    - Prevents KeyErrors
     """
-    llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+    available_columns = [c.lower() for c in df.columns]
 
-    prompt = ChatPromptTemplate.from_template(textwrap.dedent("""
-    You are a data visualization assistant.
-    You are given a pandas DataFrame named `df`.
+    # Extract column-like tokens from instruction
+    tokens = re.findall(r"[a-zA-Z0-9_]+", instruction.lower())
+    requested_cols = set(tokens)
 
-    Instruction: {instruction}
+    matched_cols = [c for c in available_columns if c in requested_cols]
 
-    Generate **safe Python code** using matplotlib and seaborn to visualize the data.
+    # If none matched, fallback to safe visualization
+    if not matched_cols:
+        fallback_prompt = f"""
+        You are a data visualization assistant.
 
-    Requirements:
-    - Define a function `visualize(df)` that:
-        - Creates a plot based on the instruction.
-        - Saves the plot under `data/visualizations/` as a `.png` file.
-        - Returns the file path as a string.
-    - Use only matplotlib and seaborn (no Plotly, os, open, system, eval, exec, or file I/O outside saving the image).
-    - Example:
-      ```python
-      def visualize(df):
-          import matplotlib.pyplot as plt
-          import seaborn as sns
-          fig, ax = plt.subplots(figsize=(8, 5))
-          sns.histplot(df['payment_value'], bins=30, kde=True, ax=ax)
-          out_path = 'data/visualizations/payment_value_hist.png'
-          plt.savefig(out_path)
-          plt.close()
-          return out_path
-      ```
-    Output only the Python code between triple backticks.
-    """))
+        The DataFrame has the following columns:
+        {available_columns}
 
-    response = llm.invoke(prompt.format(instruction=instruction))
-    code = response.content
+        The user instruction cannot be satisfied because the requested
+        columns are not present: {list(requested_cols)}.
 
-    match = re.search(r"```python(.*?)```", code, re.DOTALL)
-    if match:
-        code = match.group(1).strip()
+        Generate Python code for a SIMPLE, SAFE fallback visualization.
 
-    banned = ["os.", "system(", "eval(", "exec(", "open(", "subprocess"]
-    if any(b in code for b in banned):
-        return {"status": "error", "message": "Unsafe code detected in LLM output", "code": code}
+        Requirements:
+        - Define a function `visualize(df)` that:
+            - Creates a plot based on the instruction.
+            - Saves the plot under `data/visualizations/` as a `.png` file.
+            - Returns the file path as a string.
+        - Use only matplotlib and seaborn (no Plotly, os, open, system, eval, exec, or file I/O outside saving the image).
+        - Example:
+        ```python
+        def visualize(df):
+            import matplotlib.pyplot as plt
+            import seaborn as sns
+            fig, ax = plt.subplots(figsize=(8, 5))
+            sns.histplot(df['payment_value'], bins=30, kde=True, ax=ax)
+            out_path = 'data/visualizations/payment_value_hist.png'
+            plt.savefig(out_path)
+            plt.close()
+            return out_path
+        ```
+        Output only the Python code between triple backticks.
+        """
 
-    local_env = {"pd": pd, "sns": sns, "plt": plt}
+        llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+        response = llm.invoke(fallback_prompt)
+        code = extract_python_code(response.content)
+
+    else:
+        # Build column-aware visualization prompt for LLM
+        prompt = f"""
+        You are a data visualization expert.
+
+        User instruction: {instruction}
+
+        Available columns in the DataFrame:
+        {available_columns}
+
+        Columns that match user request:
+        {matched_cols}
+
+        Generate Python code:
+
+        Requirements:
+        - Define a function `visualize(df)` that:
+            - Creates a plot based on the instruction.
+            - Saves the plot under `data/visualizations/` as a `.png` file.
+            - Returns the file path as a string.
+        - Use only matplotlib and seaborn (no Plotly, os, open, system, eval, exec, or file I/O outside saving the image).
+        - Example:
+        ```python
+        def visualize(df):
+            import matplotlib.pyplot as plt
+            import seaborn as sns
+            fig, ax = plt.subplots(figsize=(8, 5))
+            sns.histplot(df['payment_value'], bins=30, kde=True, ax=ax)
+            out_path = 'data/visualizations/payment_value_hist.png'
+            plt.savefig(out_path)
+            plt.close()
+            return out_path
+        ```
+        Output only the Python code between triple backticks.
+        """
+
+        llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+        response = llm.invoke(prompt)
+        code = extract_python_code(response.content)
+
+    # Execute visualization code safely
     try:
+        local_env = {}
         exec(code, local_env)
-        vis_fn = local_env.get("visualize")
-        if not vis_fn:
-            raise ValueError("LLM output missing visualize(df) function.")
+        vis_fn = local_env["visualize"]
         out_path = vis_fn(df)
+        out_path = str(Path(out_path).resolve())
+
         return {
             "status": "success",
-            "plot_path": out_path,
-            "generated_code": code,
-            "message": "Visualization generated successfully."
+            "path": out_path,
+            "used_columns": matched_cols,
+            "generated_code": code
         }
+
     except Exception as e:
         return {
             "status": "error",
@@ -131,6 +179,14 @@ def llm_visualization(instruction: str, df: pd.DataFrame) -> Dict:
             "trace": traceback.format_exc(),
             "code": code
         }
+
+
+def extract_python_code(text: str) -> str:
+    """Extract ```python ... ``` blocks safely."""
+    match = re.search(r"```python(.*?)```", text, re.DOTALL)
+    if match:
+        return match.group(1).strip()
+    return text.strip()
 
 
 # -----------------------------

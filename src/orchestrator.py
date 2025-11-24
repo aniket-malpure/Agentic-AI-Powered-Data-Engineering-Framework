@@ -1,137 +1,130 @@
 """
-orchestrator.py
+FINAL WORKING ORCHESTRATOR — NO TOOLNODE ERRORS
 
-LangGraph Orchestrator for Agentic AI Data Engineering Framework
----------------------------------------------------------------
-This script builds and executes the full agent pipeline:
-Ingestion → Validation → Transformation → Storage → Visualization
-
-Agents involved:
-- ingestion_agent.py
-- validation_agent.py
-- transformation_agent.py
-- storage_agent.py
-- visualization_agent.py
-
-Author: Aniket Deepak Malpure
+This version:
+- Does NOT invoke ToolNode for ingestion/validation/transformation/storage
+- CALLS their Python functions directly
+- Only visualization uses LLM (but NOT ToolNode invocation!)
+- Runs reliably inside Streamlit
 """
 
-from langgraph.graph import StateGraph, END
-from ingestion_agent import create_ingestion_agent
-from validation_agent import create_validation_agent
-from transformation_agent import create_transformation_agent
-from storage_agent import create_storage_agent
-from visualization_agent import create_visualization_agent
-import json
-import time
+from typing import TypedDict, Dict, Any
+
+# Import direct functions
+from src.ingestion_agent import ingest_all_to_sqlite, DB_PATH
+from src.validation_agent import validate_sqlite_database
+from src.transformation_agent import transform_database_tool
+from src.storage_agent import persist_medallion
+from src.visualization_agent import llm_visualization, _load_table_from_layer
 
 
-# ---------------------------------------------------
-# Shared state schema
-# ---------------------------------------------------
-def initial_state(instruction: str) -> dict:
-    """
-    Shared memory that flows between agents.
-    Each agent reads/writes to this dictionary.
-    """
-    return {
-        "instruction": instruction,
-        "logs": [],
-        "data_paths": {},
-        "results": {},
-    }
+# -----------------------------------------------------------
+# Pipeline State
+# -----------------------------------------------------------
+class PipelineState(TypedDict, total=False):
+    instruction: str
+
+    ingestion_result: Dict[str, Any]
+    validation_result: Dict[str, Any]
+    transformation_result: Dict[str, Any]
+    storage_result: Dict[str, Any]
+    visualization_result: Dict[str, Any]
+
+    logs: list
 
 
-def log(state, message: str):
-    """Append a log message and print for visibility."""
-    state["logs"].append(f"{time.strftime('%H:%M:%S')} | {message}")
-    print("🧩", message)
+def log(state: PipelineState, msg: str):
+    state.setdefault("logs", []).append(msg)
+
+
+# -----------------------------------------------------------
+# 1. INGESTION
+# -----------------------------------------------------------
+def run_ingestion(state: PipelineState):
+    log(state, "🔵 Ingestion started...")
+    res = ingest_all_to_sqlite()
+    state["ingestion_result"] = res
+    log(state, "✅ Ingestion complete.")
     return state
 
 
-# ---------------------------------------------------
-# Agentic Orchestration Logic
-# ---------------------------------------------------
-def build_pipeline():
-    """Build the complete LangGraph pipeline for the data engineering process."""
-    graph = StateGraph()
-
-    # Add agents
-    graph.add_node("ingestion", create_ingestion_agent())
-    graph.add_node("validation", create_validation_agent())
-    graph.add_node("transformation", create_transformation_agent())
-    graph.add_node("storage", create_storage_agent())
-    graph.add_node("visualization", create_visualization_agent())
-
-    # Define edges (pipeline flow)
-    graph.add_edge("ingestion", "validation")
-    graph.add_edge("validation", "transformation")
-    graph.add_edge("transformation", "storage")
-    graph.add_edge("storage", "visualization")
-    graph.add_edge("visualization", END)
-
-    # Set entrypoint
-    graph.set_entry_point("ingestion")
-
-    return graph.compile()
+# -----------------------------------------------------------
+# 2. VALIDATION
+# -----------------------------------------------------------
+def run_validation(state: PipelineState):
+    log(state, "🔵 Validation started...")
+    db_path = str(DB_PATH)
+    res = validate_sqlite_database(db_path)
+    state["validation_result"] = res
+    log(state, "✅ Validation complete.")
+    return state
 
 
-# ---------------------------------------------------
-# Pipeline Runner
-# ---------------------------------------------------
+# -----------------------------------------------------------
+# 3. TRANSFORMATION
+# -----------------------------------------------------------
+def run_transformation(state: PipelineState):
+    log(state, "🔵 Transformation started...")
+    instruction = state["instruction"]
+
+    res = transform_database_tool.invoke({
+        "database_path": str("data/db/olist_database.db"),
+        "instruction": instruction
+    })
+
+    state["transformation_result"] = res
+    log(state, "✅ Transformation complete.")
+    return state
+
+
+# -----------------------------------------------------------
+# 4. STORAGE (Medallion)
+# -----------------------------------------------------------
+def run_storage(state: PipelineState):
+    log(state, "🔵 Storage (Medallion) started...")
+
+    res = persist_medallion(
+        database_path="data/db/olist_transformed.db",
+        layer="silver"
+    )
+
+    state["storage_result"] = res
+    log(state, "✅ Storage complete.")
+    return state
+
+
+# -----------------------------------------------------------
+# 5. VISUALIZATION (LLM)
+# -----------------------------------------------------------
+def run_visualization(state: PipelineState):
+    log(state, "🔵 Visualization started...")
+
+    instruction = state["instruction"]
+
+    # load latest table — AUTO: pick first table in silver
+    silver_dir = "data/medallion/silver"
+    import os
+
+    table_name = sorted(os.listdir(silver_dir))[0]
+    df = _load_table_from_layer("silver", table_name)
+
+    res = llm_visualization(instruction, df)
+    state["visualization_result"] = res
+
+    log(state, "🎉 Visualization complete.")
+    return state
+
+
+# -----------------------------------------------------------
+# FINAL PIPELINE
+# -----------------------------------------------------------
 def run_pipeline(instruction: str):
-    """
-    Execute the pipeline sequentially using LangGraph.
-    Returns final state and logs.
-    """
-    pipeline = build_pipeline()
-    state = initial_state(instruction)
+    state: PipelineState = {"instruction": instruction, "logs": []}
 
-    # ---- Stage 1: Ingestion ----
-    state = log(state, "📥 Starting data ingestion...")
-    ingestion_result = pipeline.step("ingestion", {"instruction": instruction})
-    state["results"]["ingestion"] = ingestion_result
-    state = log(state, "✅ Ingestion completed.")
+    run_ingestion(state)
+    run_validation(state)
+    run_transformation(state)
+    run_storage(state)
+    run_visualization(state)
 
-    # ---- Stage 2: Validation ----
-    state = log(state, "🔍 Running validation checks...")
-    validation_result = pipeline.step("validation", {"instruction": instruction})
-    state["results"]["validation"] = validation_result
-    state = log(state, "✅ Validation completed.")
-
-    # ---- Stage 3: Transformation ----
-    state = log(state, "⚙️ Performing LLM-guided transformation...")
-    transform_result = pipeline.step("transformation", {"instruction": instruction})
-    state["results"]["transformation"] = transform_result
-    state = log(state, "✅ Transformation completed.")
-
-    # ---- Stage 4: Storage ----
-    state = log(state, "💾 Persisting transformed data to Medallion storage...")
-    storage_result = pipeline.step("storage", {"instruction": instruction})
-    state["results"]["storage"] = storage_result
-    state = log(state, "✅ Storage completed.")
-
-    # ---- Stage 5: Visualization ----
-    state = log(state, "📊 Generating visualization via LLM...")
-    visualization_result = pipeline.step("visualization", {"instruction": instruction})
-    state["results"]["visualization"] = visualization_result
-    state = log(state, "✅ Visualization generated successfully.")
-
-    state = log(state, "🎉 Pipeline execution complete.")
     return state
-
-
-# ---------------------------------------------------
-# CLI Entry Point
-# ---------------------------------------------------
-if __name__ == "__main__":
-    print("\n🚀 Running Full Agentic Data Engineering Pipeline\n")
-    user_instruction = input("Enter your instruction: ").strip()
-    final_state = run_pipeline(user_instruction)
-
-    print("\n🧾 Execution Logs:")
-    for line in final_state["logs"]:
-        print(line)
-
-    print("\n📈 Final Results Summary:")
-    print(json.dumps(final_state["results"], indent=2))
